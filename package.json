@@ -4,7 +4,8 @@
   "description": "An AngularJS module for resizing table columns!",
   "main": "./dist/angular-table-resize.js",
   "scripts": {
-    "test": "karma start"
+    "test": "karma start",
+    "build": "gulp build"
   },
   "repository": {
     "type": "git",
