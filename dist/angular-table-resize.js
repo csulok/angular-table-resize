@@ -46,6 +46,12 @@ angular.module("ngTableResize").directive('resizeable', ['resizeStorage', '$inje
     }
 
     function watchModeChange(table, attr, scope) {
+        
+        scope.$on('table-resize-reset', function() {
+            cleanUpAll(table);
+            initialiseAll(table, attr, scope);
+        });
+        
         scope.$watch(function() {
             return scope.mode;
         }, function(/*newMode*/) {
@@ -99,7 +105,7 @@ angular.module("ngTableResize").directive('resizeable', ['resizeStorage', '$inje
 
         // Initialise all handlers for every column
         handleColumns.each(function(index, column) {
-            initHandle(table, column);
+            initHandle(table, column, scope);
         })
 
     }
@@ -120,7 +126,7 @@ angular.module("ngTableResize").directive('resizeable', ['resizeStorage', '$inje
         resizer.onTableReady();
     }
 
-    function initHandle(table, column) {
+    function initHandle(table, column, scope) {
         // Prepend a new handle div to the column
         var handle = $('<div>', {
             class: 'handle'
@@ -134,10 +140,10 @@ angular.module("ngTableResize").directive('resizeable', ['resizeStorage', '$inje
         var controlledColumn = resizer.handleMiddleware(handle, column)
 
         // Bind mousedown, mousemove & mouseup events
-        bindEventToHandle(table, handle, controlledColumn);
+        bindEventToHandle(table, handle, controlledColumn, scope);
     }
 
-    function bindEventToHandle(table, handle, column) {
+    function bindEventToHandle(table, handle, column, scope) {
 
         // This event starts the dragging
         $(handle).mousedown(function(event) {
@@ -171,7 +177,7 @@ angular.module("ngTableResize").directive('resizeable', ['resizeStorage', '$inje
             $(window).mousemove(calculateWidthEvent(column, orgX, orgWidth, optional))
 
             // Stop dragging as soon as the mouse is released
-            $(window).one('mouseup', unbindEvent(handle))
+            $(window).one('mouseup', unbindEvent(handle, scope))
 
         })
     }
@@ -218,15 +224,17 @@ angular.module("ngTableResize").directive('resizeable', ['resizeStorage', '$inje
     }
 
 
-    function unbindEvent(handle) {
+    function unbindEvent(handle, scope) {
         // Event called at end of drag
         return function( /*event*/ ) {
             $(handle).removeClass('active');
             $(window).unbind('mousemove');
             $('body').removeClass('table-resize');
 
-            resizer.onEndDrag();
-
+            var values = resizer.onEndDrag();
+            
+            scope.$emit('table-resize-end', values);
+            
             saveColumnSizes();
         }
     }
@@ -408,13 +416,18 @@ angular.module("ngTableResize").factory("BasicResizer", ["ResizerModel", functio
         var totWidth = $(this.table).outerWidth();
 
         var totPercent = 0;
+        
+        var percentages = [];
 
         $(this.columns).each(function(index, column) {
             var colWidth = $(column).outerWidth();
             var percentWidth = colWidth / totWidth * 100 + '%';
             totPercent += (colWidth / totWidth * 100);
+            percentages.push(percentWidth);
             $(column).css({ width: percentWidth });
         })
+        
+        return percentages;
 
     };
 

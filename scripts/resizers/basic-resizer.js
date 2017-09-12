@@ -53,13 +53,18 @@ angular.module("ngTableResize").factory("BasicResizer", ["ResizerModel", functio
         var totWidth = $(this.table).outerWidth();
 
         var totPercent = 0;
+        
+        var percentages = [];
 
         $(this.columns).each(function(index, column) {
             var colWidth = $(column).outerWidth();
             var percentWidth = colWidth / totWidth * 100 + '%';
             totPercent += (colWidth / totWidth * 100);
+            percentages.push(percentWidth);
             $(column).css({ width: percentWidth });
         })
+        
+        return percentages;
 
     };
 
